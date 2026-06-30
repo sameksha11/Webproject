@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Digital Memory Vault</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080810;--bg2:#0f0f1a;--bg3:#16162a;--bg4:#1e1e34;--bg5:#252540;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--border3:rgba(255,255,255,0.2);
+  --text:#eeeef8;--text2:#9898b8;--text3:#55556a;
+  --accent:#6c63ff;--accent2:#9d96ff;--accent-glow:rgba(108,99,255,0.25);
+  --gold:#f5c542;--gold-soft:rgba(245,197,66,0.15);
+  --rose:#ff6b8a;--rose-soft:rgba(255,107,138,0.12);
+  --teal:#3ecfb0;--teal-soft:rgba(62,207,176,0.12);
+  --r:16px;--r-sm:10px;--r-xs:6px;
+}
+html,body{height:100%;font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+
+/* STAR BACKGROUND */
+.stars{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.star{position:absolute;border-radius:50%;background:#fff;animation:twinkle var(--d,3s) ease-in-out infinite alternate}
+@keyframes twinkle{from{opacity:0.1}to{opacity:0.6}}
+
+/* LAYOUT */
+.app{display:flex;height:100vh;position:relative;z-index:1}
+
+/* SIDEBAR */
+.sidebar{
+  width:240px;flex-shrink:0;
+  background:var(--bg2);
+  border-right:0.5px solid var(--border2);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.sidebar-brand{
+  padding:1.5rem 1.25rem 1rem;
+  border-bottom:0.5px solid var(--border);
+}
+.brand-name{
+  font-family:'Playfair Display',serif;
+  font-size:1.15rem;color:var(--text);
+  display:flex;align-items:center;gap:10px;
+}
+.brand-icon{
+  width:32px;height:32px;border-radius:var(--r-xs);
+  background:linear-gradient(135deg,var(--accent),#a855f7);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0;
+}
+.brand-sub{font-size:11px;color:var(--text3);margin-top:3px;padding-left:42px}
+
+.sidebar-nav{padding:.75rem .75rem;display:flex;flex-direction:column;gap:2px;flex:1;overflow-y:auto}
+.nav-section{font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);padding:10px 10px 4px}
+.nav-btn{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;border-radius:var(--r-sm);
+  border:none;background:none;color:var(--text2);
+  font-size:13px;font-family:inherit;cursor:pointer;
+  width:100%;text-align:left;transition:all .15s;
+}
+.nav-btn svg{flex-shrink:0;width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.nav-btn:hover{background:var(--bg4);color:var(--text)}
+.nav-btn.active{background:rgba(108,99,255,0.18);color:var(--accent2)}
+.nav-badge{margin-left:auto;font-size:10px;background:var(--accent);color:#fff;border-radius:20px;padding:1px 7px;font-weight:500}
+
+.sidebar-footer{padding:.75rem;border-top:0.5px solid var(--border)}
+.storage-bar-wrap{padding:10px 10px 0}
+.storage-label{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:6px}
+.storage-track{height:3px;background:var(--bg5);border-radius:20px}
+.storage-fill{height:3px;border-radius:20px;background:linear-gradient(90deg,var(--accent),var(--rose));transition:width .4s}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* TOPBAR */
+.topbar{
+  padding:.85rem 1.5rem;background:var(--bg2);
+  border-bottom:0.5px solid var(--border2);
+  display:flex;align-items:center;gap:12px;flex-shrink:0;
+}
+.search-wrap{
+  flex:1;display:flex;align-items:center;gap:8px;
+  background:var(--bg3);border:0.5px solid var(--border2);
+  border-radius:var(--r-sm);padding:0 14px;height:38px;
+}
+.search-wrap svg{width:16px;height:16px;stroke:var(--text3);fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0}
+.search-wrap input{border:none;background:none;outline:none;color:var(--text);font-size:13.5px;font-family:inherit;width:100%}
+.search-wrap input::placeholder{color:var(--text3)}
+select.filter{
+  background:var(--bg3);border:0.5px solid var(--border2);
+  border-radius:var(--r-sm);color:var(--text2);
+  font-size:12.5px;font-family:inherit;padding:0 12px;height:38px;cursor:pointer;outline:none;
+}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:0 16px;height:38px;border-radius:var(--r-sm);
+  font-size:13px;font-weight:500;font-family:inherit;
+  cursor:pointer;border:none;transition:all .15s;white-space:nowrap;
+}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent2);box-shadow:0 0 20px var(--accent-glow)}
+.btn-ghost{background:var(--bg3);color:var(--text2);border:0.5px solid var(--border2)}
+.btn-ghost:hover{background:var(--bg4);color:var(--text)}
+.btn-icon{width:38px;height:38px;padding:0;justify-content:center}
+
+/* CONTENT AREA */
+.content{flex:1;overflow-y:auto;padding:1.5rem}
+.content::-webkit-scrollbar{width:4px}
+.content::-webkit-scrollbar-track{background:transparent}
+.content::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:4px}
+
+/* FLASHBACK BANNER */
+.flashback-banner{
+  background:var(--gold-soft);border:0.5px solid rgba(245,197,66,0.3);
+  border-radius:var(--r);padding:14px 18px;
+  display:flex;align-items:center;gap:14px;margin-bottom:1.25rem;
+  cursor:pointer;transition:background .15s;
+}
+.flashback-banner:hover{background:rgba(245,197,66,0.2)}
+.fb-glow{width:38px;height:38px;border-radius:50%;background:rgba(245,197,66,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px}
+.fb-text strong{display:block;font-size:13.5px;font-weight:500;color:var(--gold);margin-bottom:1px}
+.fb-text span{font-size:12px;color:var(--text2)}
+.fb-close{margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:4px}
+
+/* STATS ROW */
+.stats-row{display:flex;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap}
+.stat-chip{
+  display:flex;align-items:center;gap:6px;
+  background:var(--bg3);border:0.5px solid var(--border);
+  border-radius:20px;padding:5px 14px;
+  font-size:12px;color:var(--text2);
+}
+.stat-chip .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* VIEW CONTROLS */
+.view-controls{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.section-title{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--text);display:flex;align-items:center;gap:8px}
+.section-title small{font-family:'Outfit',sans-serif;font-size:11px;font-weight:400;color:var(--text3)}
+.view-toggle{display:flex;gap:2px}
+.view-btn{
+  background:var(--bg3);border:0.5px solid var(--border2);
+  color:var(--text3);padding:6px 9px;cursor:pointer;
+  font-size:15px;transition:all .15s;
+}
+.view-btn:first-child{border-radius:var(--r-sm) 0 0 var(--r-sm)}
+.view-btn:last-child{border-radius:0 var(--r-sm) var(--r-sm) 0}
+.view-btn.active{background:rgba(108,99,255,0.18);color:var(--accent2);border-color:rgba(108,99,255,0.4)}
+.view-btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;display:block}
+
+/* TIMELINE */
+.timeline{display:flex;flex-direction:column;gap:2rem}
+.tl-month-label{
+  font-size:10.5px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--text3);
+  display:flex;align-items:center;gap:10px;margin-bottom:12px;
+}
+.tl-month-label::after{content:'';flex:1;height:0.5px;background:var(--border)}
+
+/* GRID */
+.memory-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+
+/* CARD */
+.card{
+  background:var(--bg3);border:0.5px solid var(--border);
+  border-radius:var(--r);overflow:hidden;cursor:pointer;
+  transition:transform .2s,border-color .2s,box-shadow .2s;
+  animation:fadeUp .3s ease both;position:relative;
+}
+.card:hover{transform:translateY(-3px);border-color:var(--border2);box-shadow:0 12px 40px rgba(0,0,0,0.4)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+.card-thumb{width:100%;height:155px;object-fit:cover;display:block;background:var(--bg4)}
+.card-thumb-placeholder{
+  width:100%;height:155px;background:var(--bg4);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:6px;
+}
+.card-thumb-placeholder .ph-icon{font-size:40px}
+.card-thumb-placeholder .ph-label{font-size:11px;color:var(--text3)}
+.card-video-thumb{width:100%;height:155px;object-fit:cover;display:block;background:#000}
+
+.card-fav{
+  position:absolute;top:8px;right:8px;
+  width:28px;height:28px;border-radius:50%;
+  background:rgba(0,0,0,0.6);border:none;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .15s;backdrop-filter:blur(4px);
+  font-size:14px;
+}
+.card-fav:hover,.card-fav.on{color:var(--gold)}
+
+.card-body{padding:11px 13px 13px}
+.card-title{font-size:13.5px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
+.card-desc{font-size:11.5px;color:var(--text2);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:9px}
+.card-foot{display:flex;align-items:center;justify-content:space-between}
+.card-date{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:4px}
+.card-date svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2}
+.badge{font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:3px 8px;border-radius:20px}
+.badge-photo{background:rgba(108,99,255,0.18);color:var(--accent2)}
+.badge-video{background:var(--teal-soft);color:var(--teal)}
+.badge-note{background:var(--gold-soft);color:var(--gold)}
+
+/* LIST VIEW */
+.memory-list{display:flex;flex-direction:column;gap:7px}
+.list-item{
+  background:var(--bg3);border:0.5px solid var(--border);
+  border-radius:var(--r-sm);padding:12px 16px;
+  display:flex;align-items:center;gap:14px;cursor:pointer;
+  transition:border-color .15s,background .15s;
+}
+.list-item:hover{border-color:var(--border2);background:var(--bg4)}
+.list-thumb{width:48px;height:48px;border-radius:var(--r-xs);object-fit:cover;flex-shrink:0;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden}
+.list-thumb img,.list-thumb video{width:100%;height:100%;object-fit:cover}
+.list-info{flex:1;min-width:0}
+.list-title{font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list-meta{font-size:11.5px;color:var(--text3);margin-top:2px}
+.list-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+
+/* EMPTY */
+.empty{text-align:center;padding:4rem 1rem;color:var(--text3)}
+.empty-icon{font-size:48px;margin-bottom:14px}
+.empty p{font-size:14px}
+
+/* MODAL OVERLAY */
+.overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,0.78);z-index:500;
+  align-items:center;justify-content:center;padding:1rem;
+  backdrop-filter:blur(4px);
+}
+.overlay.open{display:flex}
+.modal{
+  background:var(--bg2);border:0.5px solid var(--border2);
+  border-radius:var(--r);width:100%;max-width:520px;
+  max-height:90vh;overflow-y:auto;
+  animation:modalIn .2s ease;
+}
+.modal::-webkit-scrollbar{width:3px}
+.modal::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:3px}
+@keyframes modalIn{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:none}}
+.modal-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1.25rem 1.5rem;border-bottom:0.5px solid var(--border);
+  position:sticky;top:0;background:var(--bg2);z-index:1;
+}
+.modal-title{font-family:'Playfair Display',serif;font-size:1.1rem}
+.modal-close{background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer;line-height:1;padding:2px}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:14px}
+.modal-foot{padding:1rem 1.5rem;border-top:0.5px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+
+/* FORM */
+.f-group{display:flex;flex-direction:column;gap:5px}
+.f-label{font-size:11.5px;font-weight:500;color:var(--text2);letter-spacing:.03em}
+.f-input{
+  background:var(--bg3);border:0.5px solid var(--border2);
+  border-radius:var(--r-sm);color:var(--text);
+  font-size:13.5px;font-family:inherit;
+  padding:10px 13px;outline:none;transition:border-color .15s;width:100%;
+}
+.f-input:focus{border-color:var(--accent)}
+textarea.f-input{resize:vertical;min-height:75px;line-height:1.5}
+.f-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* UPLOAD ZONE */
+.upload-zone{
+  border:1.5px dashed var(--border2);border-radius:var(--r);
+  padding:1.75rem;text-align:center;cursor:pointer;
+  transition:all .2s;
+}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:var(--accent-glow)}
+.uz-icon{font-size:32px;margin-bottom:10px}
+.uz-title{font-size:14px;font-weight:500;margin-bottom:3px}
+.uz-sub{font-size:12px;color:var(--text3)}
+.uz-preview{width:100%;max-height:180px;object-fit:contain;border-radius:var(--r-sm);margin-top:12px;display:none}
+
+/* VIEW MODAL MEDIA */
+.view-media{width:100%;max-height:320px;object-fit:contain;border-radius:var(--r-sm);background:var(--bg);display:block}
+.view-placeholder{
+  width:100%;height:180px;border-radius:var(--r-sm);
+  background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:56px;
+}
+.view-meta-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.info-chip{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);background:var(--bg3);padding:4px 11px;border-radius:20px;border:0.5px solid var(--border)}
+
+/* FLASHBACK MODAL */
+.fb-results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:4px}
+.fb-card{
+  background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--r-sm);
+  overflow:hidden;cursor:pointer;transition:border-color .15s;
+}
+.fb-card:hover{border-color:var(--border2)}
+.fb-card-thumb{width:100%;height:90px;object-fit:cover;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:30px}
+.fb-card-thumb img,.fb-card-thumb video{width:100%;height:100%;object-fit:cover}
+.fb-card-info{padding:8px 10px}
+.fb-card-title{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fb-card-date{font-size:10.5px;color:var(--text3);margin-top:2px}
+
+input[type=file]{display:none}
+</style>
+</head>
+<body>
+
+<!-- Stars -->
+<div class="stars" id="stars"></div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-name">
+        <div class="brand-icon">🧠</div>
+        Memory Vault
+      </div>
+      <div class="brand-sub">Your digital memory box</div>
+    </div>
+    <div class="sidebar-nav">
+      <button class="nav-btn active" data-filter="all" onclick="navClick(this,'all')">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        All Memories <span class="nav-badge" id="badgeAll">0</span>
+      </button>
+      <button class="nav-btn" data-filter="photo" onclick="navClick(this,'photo')">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21,15 16,10 5,21"/></svg>
+        Photos <span class="nav-badge" id="badgePhoto">0</span>
+      </button>
+      <button class="nav-btn" data-filter="video" onclick="navClick(this,'video')">
+        <svg viewBox="0 0 24 24"><polygon points="23,7 16,12 23,17"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        Videos <span class="nav-badge" id="badgeVideo">0</span>
+      </button>
+      <button class="nav-btn" data-filter="note" onclick="navClick(this,'note')">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Notes <span class="nav-badge" id="badgeNote">0</span>
+      </button>
+
+      <div class="nav-section">Special</div>
+      <button class="nav-btn" data-filter="fav" onclick="navClick(this,'fav')">
+        <svg viewBox="0 0 24 24"><polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/></svg>
+        Favourites <span class="nav-badge" id="badgeFav">0</span>
+      </button>
+      <button class="nav-btn" onclick="openFlashbackModal()">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+        Flashback
+      </button>
+    </div>
+    <div class="sidebar-footer">
+      <div class="storage-bar-wrap">
+        <div class="storage-label">
+          <span>Memories stored</span>
+          <span id="storageCount">0</span>
+        </div>
+        <div class="storage-track"><div class="storage-fill" id="storageFill" style="width:0%"></div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchInput" placeholder="Search memories by title or description…" oninput="render()">
+      </div>
+      <select class="filter" id="yearFilter" onchange="render()">
+        <option value="">All years</option>
+      </select>
+      <select class="filter" id="monthFilter" onchange="render()">
+        <option value="">All months</option>
+        <option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option>
+        <option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option>
+        <option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option>
+        <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+      </select>
+      <button class="btn btn-ghost" onclick="openFlashbackModal()">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+        Flashback
+      </button>
+      <button class="btn btn-primary" onclick="openAddModal()">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Memory
+      </button>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content" id="contentArea">
+      <!-- rendered here -->
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADD MEMORY MODAL ══ -->
+<div class="overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">Add a Memory</span>
+      <button class="modal-close" onclick="closeModal('addModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- Upload zone -->
+      <label class="upload-zone" id="uploadZone"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="handleZoneDrop(event)">
+        <input type="file" id="filePickerAdd" accept="image/*,video/*" onchange="handleFilePick(event)">
+        <div class="uz-icon">☁️</div>
+        <div class="uz-title">Upload Photo or Video</div>
+        <div class="uz-sub">Drag & drop or click to browse</div>
+        <img id="uploadPreviewImg" class="uz-preview" alt="preview">
+        <video id="uploadPreviewVid" class="uz-preview" controls></video>
+      </label>
+
+      <div class="f-group">
+        <label class="f-label">Memory Title *</label>
+        <input class="f-input" id="addTitle" type="text" placeholder="Give this memory a name…">
+      </div>
+      <div class="f-group">
+        <label class="f-label">Description</label>
+        <textarea class="f-input" id="addDesc" placeholder="What happened? How did it feel?"></textarea>
+      </div>
+      <div class="f-row">
+        <div class="f-group">
+          <label class="f-label">Date *</label>
+          <input class="f-input" id="addDate" type="date">
+        </div>
+        <div class="f-group">
+          <label class="f-label">Time</label>
+          <input class="f-input" id="addTime" type="time">
+        </div>
+      </div>
+      <div class="f-row">
+        <div class="f-group">
+          <label class="f-label">Type</label>
+          <select class="f-input" id="addType">
+            <option value="photo">📷 Photo</option>
+            <option value="video">🎥 Video</option>
+            <option value="note">📝 Note</option>
+          </select>
+        </div>
+        <div class="f-group">
+          <label class="f-label">Emoji</label>
+          <input class="f-input" id="addEmoji" type="text" placeholder="🌅" maxlength="4">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('addModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveMemory()">
+        <svg viewBox="0 0 24 24"><polyline points="20,6 9,17 4,12"/></svg>
+        Save Memory
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ VIEW MEMORY MODAL ══ -->
+<div class="overlay" id="viewModal">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-head">
+      <span class="modal-title" id="viewModalTitle">Memory</span>
+      <button class="modal-close" onclick="closeModal('viewModal')">×</button>
+    </div>
+    <div class="modal-body" id="viewModalBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="viewFavBtn" onclick="toggleFavView()">☆ Favourite</button>
+      <button class="btn btn-ghost" style="color:#ff6b8a;border-color:rgba(255,107,138,0.3)" onclick="deleteMemory()">
+        <svg viewBox="0 0 24 24"><polyline points="3,6 5,6 21,6"/><path d="M19,6v14a2,2,0,01-2,2H7a2,2,0,01-2-2V6m3,0V4a2,2,0,012-2h4a2,2,0,012,2v2"/></svg>
+        Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FLASHBACK MODAL ══ -->
+<div class="overlay" id="flashbackModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-head">
+      <span class="modal-title">✨ Flashback</span>
+      <button class="modal-close" onclick="closeModal('flashbackModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2);line-height:1.6">Travel back to any date and rediscover memories from that moment in time.</p>
+      <div class="f-row">
+        <div class="f-group">
+          <label class="f-label">Date</label>
+          <input class="f-input" id="fbDate" type="date">
+        </div>
+        <div class="f-group">
+          <label class="f-label">Time (±1 hr window)</label>
+          <input class="f-input" id="fbTime" type="time">
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%" onclick="runFlashback()">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+        Show Flashbacks
+      </button>
+      <div id="fbResults"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const TYPE_ICON={photo:'📷',video:'🎥',note:'📝'};
+
+let memories=[];
+let filter='all';
+let displayMode='grid';
+let viewingId=null;
+let pendingFile=null; // { dataUrl, type }
+
+function loadMemories(){
+  try{ memories=JSON.parse(localStorage.getItem('dmv2_memories')||'[]'); }catch(e){ memories=[]; }
+  if(!memories.length) seedDemo();
+}
+function saveMemories(){
+  try{ localStorage.setItem('dmv2_memories',JSON.stringify(memories)); }catch(e){
+    alert('Storage full! Try deleting some memories with large photos.');
+  }
+}
+function nextId(){ return memories.length?Math.max(...memories.map(m=>m.id))+1:1; }
+
+function seedDemo(){
+  memories=[
+    {id:1,title:'Family beach trip',desc:'A beautiful Sunday at the coast. The waves were perfect!',date:'2024-06-15',time:'14:30',type:'photo',emoji:'🏖️',fav:true,media:null},
+    {id:2,title:'First day at new job',desc:'Nervous but excited. Everyone was so welcoming.',date:'2024-03-04',time:'09:00',type:'note',emoji:'💼',fav:false,media:null},
+    {id:3,title:"Grandma's 75th birthday",desc:'Surprise party was a huge success. She cried happy tears!',date:'2023-11-20',time:'18:00',type:'video',emoji:'🎂',fav:true,media:null},
+    {id:4,title:'Monsoon evening walk',desc:'The smell of rain on dry earth. Pure peace.',date:'2023-07-08',time:'17:45',type:'photo',emoji:'🌧️',fav:false,media:null},
+    {id:5,title:'Graduation day',desc:'Four years of hard work — finally holding the degree!',date:'2022-05-06',time:'11:00',type:'photo',emoji:'🎓',fav:true,media:null},
+  ];
+  saveMemories();
+}
+
+// ── STARS ──
+(function(){
+  const c=document.getElementById('stars');
+  for(let i=0;i<70;i++){
+    const s=document.createElement('div');s.className='star';
+    const sz=Math.random()*2+0.5;
+    s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--d:${(Math.random()*3+2).toFixed(1)}s;animation-delay:${(Math.random()*4).toFixed(1)}s`;
+    c.appendChild(s);
+  }
+})();
+
+// ── NAV ──
+function navClick(el,f){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  filter=f;render();
+}
+
+// ── FILTER ──
+function getFiltered(){
+  const q=document.getElementById('searchInput').value.toLowerCase().trim();
+  const yr=document.getElementById('yearFilter').value;
+  const mo=document.getElementById('monthFilter').value;
+  return memories.filter(m=>{
+    if(filter==='photo'&&m.type!=='photo')return false;
+    if(filter==='video'&&m.type!=='video')return false;
+    if(filter==='note'&&m.type!=='note')return false;
+    if(filter==='fav'&&!m.fav)return false;
+    if(q&&!m.title.toLowerCase().includes(q)&&!(m.desc||'').toLowerCase().includes(q))return false;
+    if(yr&&!m.date.startsWith(yr))return false;
+    if(mo&&m.date.split('-')[1]!==mo)return false;
+    return true;
+  }).sort((a,b)=>b.date.localeCompare(a.date)||(b.time||'').localeCompare(a.time||''));
+}
+
+// ── YEAR OPTIONS ──
+function updateYears(){
+  const yr=document.getElementById('yearFilter');
+  const cur=yr.value;
+  const years=[...new Set(memories.map(m=>m.date?.split('-')[0]).filter(Boolean))].sort((a,b)=>b-a);
+  yr.innerHTML='<option value="">All years</option>'+years.map(y=>`<option value="${y}"${y===cur?' selected':''}>${y}</option>`).join('');
+}
+
+// ── BADGES ──
+function updateBadges(){
+  const counts={photo:0,video:0,note:0,fav:0};
+  memories.forEach(m=>{counts[m.type]++;if(m.fav)counts.fav++;});
+  document.getElementById('badgeAll').textContent=memories.length;
+  document.getElementById('badgePhoto').textContent=counts.photo;
+  document.getElementById('badgeVideo').textContent=counts.video;
+  document.getElementById('badgeNote').textContent=counts.note;
+  document.getElementById('badgeFav').textContent=counts.fav;
+  document.getElementById('storageCount').textContent=memories.length+' items';
+  const pct=Math.min(memories.length/50*100,100);
+  document.getElementById('storageFill').style.width=pct+'%';
+}
+
+// ── FORMAT ──
+function fmtDate(d){
+  if(!d)return'';
+  const [y,mo,day]=d.split('-');
+  return `${+day} ${MONTHS[+mo-1].slice(0,3)} ${y}`;
+}
+
+// ── MEDIA ELEMENT ──
+function mediaEl(m,cls='card-thumb'){
+  if(m.media){
+    if(m.type==='video'){
+      return `<video class="${cls}" src="${m.media}" preload="metadata" muted></video>`;
+    } else {
+      return `<img class="${cls}" src="${m.media}" alt="${m.title}" loading="lazy">`;
+    }
+  }
+  return `<div class="${cls}-placeholder"><div class="ph-icon">${m.emoji||TYPE_ICON[m.type]||'📦'}</div><div class="ph-label">${m.type}</div></div>`;
+}
+
+// ── RENDER ──
+function render(){
+  updateYears();updateBadges();
+  const filtered=getFiltered();
+  const ca=document.getElementById('contentArea');
+
+  // Flashback banner
+  let banner='';
+  const today=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const tmo=pad(today.getMonth()+1),tday=pad(today.getDate());
+  const fbCount=memories.filter(m=>{
+    const[,mmo,mday]=m.date.split('-');
+    return mmo===tmo&&mday===tday&&+m.date.split('-')[0]<today.getFullYear();
+  }).length;
+  if(fbCount&&filter==='all'){
+    banner=`<div class="flashback-banner" id="fbBanner" onclick="openFlashbackModal()">
+      <div class="fb-glow">✨</div>
+      <div class="fb-text">
+        <strong>Memory Flashback</strong>
+        <span>You have ${fbCount} memor${fbCount===1?'y':'ies'} from today in past years</span>
+      </div>
+      <button class="fb-close" onclick="event.stopPropagation();document.getElementById('fbBanner').remove()">×</button>
+    </div>`;
+  }
+
+  // Stats
+  const stats=`<div class="stats-row">
+    <div class="stat-chip"><div class="dot" style="background:var(--accent2)"></div>${filtered.length} total</div>
+    <div class="stat-chip"><div class="dot" style="background:var(--accent2)"></div>${filtered.filter(m=>m.type==='photo').length} photos</div>
+    <div class="stat-chip"><div class="dot" style="background:var(--teal)"></div>${filtered.filter(m=>m.type==='video').length} videos</div>
+    <div class="stat-chip"><div class="dot" style="background:var(--gold)"></div>${filtered.filter(m=>m.type==='note').length} notes</div>
+  </div>`;
+
+  // View controls
+  const controls=`<div class="view-controls">
+    <div class="section-title">
+      ${filter==='fav'?'Favourites':filter==='all'?'All Memories':filter.charAt(0).toUpperCase()+filter.slice(1)+'s'}
+      <small>${filtered.length} items</small>
+    </div>
+    <div class="view-toggle">
+      <button class="view-btn${displayMode==='grid'?' active':''}" onclick="setMode('grid')" title="Grid">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      </button>
+      <button class="view-btn${displayMode==='list'?' active':''}" onclick="setMode('list')" title="List">
+        <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </button>
+    </div>
+  </div>`;
+
+  if(!filtered.length){
+    ca.innerHTML=banner+stats+controls+`<div class="empty"><div class="empty-icon">🌙</div><p>No memories here yet.<br>Add one with the button above!</p></div>`;
+    return;
+  }
+
+  let memoriesHtml='';
+  if(displayMode==='list'){
+    memoriesHtml=`<div class="memory-list">`+filtered.map(m=>{
+      let thumb='';
+      if(m.media){
+        if(m.type==='video') thumb=`<div class="list-thumb"><video src="${m.media}" style="width:100%;height:100%;object-fit:cover"></video></div>`;
+        else thumb=`<div class="list-thumb"><img src="${m.media}" style="width:100%;height:100%;object-fit:cover" alt="${m.title}"></div>`;
+      } else {
+        thumb=`<div class="list-thumb">${m.emoji||TYPE_ICON[m.type]}</div>`;
+      }
+      return `<div class="list-item" onclick="viewMemory(${m.id})">
+        ${thumb}
+        <div class="list-info">
+          <div class="list-title">${m.title}</div>
+          <div class="list-meta">${fmtDate(m.date)}${m.time?' · '+m.time:''}${m.fav?' · ⭐':''}</div>
+        </div>
+        <div class="list-right">
+          <span class="badge badge-${m.type}">${m.type}</span>
+        </div>
+      </div>`;
+    }).join('')+`</div>`;
+  } else {
+    // Group by month
+    const groups={};
+    filtered.forEach(m=>{
+      const[y,mo]=m.date.split('-');
+      const k=`${y}-${mo}`;
+      if(!groups[k])groups[k]={label:`${MONTHS[+mo-1]} ${y}`,items:[]};
+      groups[k].items.push(m);
+    });
+    memoriesHtml=`<div class="timeline">`+Object.entries(groups).map(([,g])=>`
+      <div>
+        <div class="tl-month-label">${g.label}</div>
+        <div class="memory-grid">
+          ${g.items.map((m,i)=>`
+            <div class="card" onclick="viewMemory(${m.id})" style="animation-delay:${i*0.04}s">
+              ${m.media
+                ? (m.type==='video'
+                    ? `<video class="card-video-thumb" src="${m.media}" preload="metadata" muted></video>`
+                    : `<img class="card-thumb" src="${m.media}" alt="${m.title}" loading="lazy">`)
+                : `<div class="card-thumb-placeholder"><div class="ph-icon">${m.emoji||TYPE_ICON[m.type]}</div><div class="ph-label">${m.type}</div></div>`
+              }
+              <button class="card-fav${m.fav?' on':''}" onclick="event.stopPropagation();toggleFav(${m.id})" title="Favourite">${m.fav?'★':'☆'}</button>
+              <div class="card-body">
+                <div class="card-title">${m.title}</div>
+                <div class="card-desc">${m.desc||'No description.'}</div>
+                <div class="card-foot">
+                  <div class="card-date">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    ${fmtDate(m.date)}
+                  </div>
+                  <span class="badge badge-${m.type}">${m.type}</span>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('')+`</div>`;
+  }
+
+  ca.innerHTML=banner+stats+controls+memoriesHtml;
+}
+
+function setMode(m){ displayMode=m; render(); }
+
+// ── TOGGLE FAV ──
+function toggleFav(id){
+  const m=memories.find(x=>x.id===id);
+  if(m){m.fav=!m.fav;saveMemories();render();}
+}
+
+// ── VIEW MEMORY ──
+function viewMemory(id){
+  viewingId=id;
+  const m=memories.find(x=>x.id===id);if(!m)return;
+  document.getElementById('viewModalTitle').textContent=m.title;
+
+  let mediaHtml='';
+  if(m.media){
+    if(m.type==='video'){
+      mediaHtml=`<video class="view-media" src="${m.media}" controls></video>`;
+    } else {
+      mediaHtml=`<img class="view-media" src="${m.media}" alt="${m.title}">`;
+    }
+  } else {
+    mediaHtml=`<div class="view-placeholder">${m.emoji||TYPE_ICON[m.type]}</div>`;
+  }
+
+  document.getElementById('viewModalBody').innerHTML=`
+    ${mediaHtml}
+    <p style="font-size:13.5px;color:var(--text2);line-height:1.7">${m.desc||'No description added.'}</p>
+    <div class="view-meta-row">
+      <span class="info-chip">📅 ${fmtDate(m.date)}</span>
+      ${m.time?`<span class="info-chip">🕐 ${m.time}`+'</span>':''}
+      <span class="badge badge-${m.type}" style="padding:5px 12px">${m.type}</span>
+      ${m.fav?'<span class="info-chip">⭐ Favourite</span>':''}
+    </div>
+  `;
+
+  const fb=document.getElementById('viewFavBtn');
+  fb.textContent=(m.fav?'★ Unfavourite':'☆ Favourite');
+  fb.style.color=m.fav?'var(--gold)':'';
+  openModal('viewModal');
+}
+function toggleFavView(){
+  toggleFav(viewingId);
+  viewMemory(viewingId);
+}
+function deleteMemory(){
+  if(!confirm('Delete this memory permanently?'))return;
+  memories=memories.filter(m=>m.id!==viewingId);
+  saveMemories();closeModal('viewModal');render();
+}
+
+// ── ADD MEMORY ──
+function openAddModal(){
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  document.getElementById('addDate').value=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  document.getElementById('addTime').value=`${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  document.getElementById('addTitle').value='';
+  document.getElementById('addDesc').value='';
+  document.getElementById('addEmoji').value='';
+  document.getElementById('addType').value='photo';
+  document.getElementById('uploadPreviewImg').style.display='none';
+  document.getElementById('uploadPreviewVid').style.display='none';
+  pendingFile=null;
+  openModal('addModal');
+}
+
+function handleFilePick(e){
+  const file=e.target.files[0];if(!file)return;
+  processFile(file);
+}
+function handleZoneDrop(e){
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag');
+  const file=e.dataTransfer.files[0];if(!file)return;
+  processFile(file);
+}
+function processFile(file){
+  const isVideo=file.type.startsWith('video/');
+  const isImage=file.type.startsWith('image/');
+  if(!isVideo&&!isImage){alert('Only image and video files are supported.');return;}
+
+  // Check size — warn if > 5MB
+  if(file.size>5*1024*1024){
+    if(!confirm('This file is larger than 5MB and may exceed storage limits. Continue?'))return;
+  }
+
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    const dataUrl=ev.target.result;
+    pendingFile={dataUrl,type:isVideo?'video':'photo'};
+    document.getElementById('addType').value=pendingFile.type;
+
+    if(isVideo){
+      document.getElementById('uploadPreviewImg').style.display='none';
+      const v=document.getElementById('uploadPreviewVid');
+      v.src=dataUrl;v.style.display='block';
+    } else {
+      document.getElementById('uploadPreviewVid').style.display='none';
+      const i=document.getElementById('uploadPreviewImg');
+      i.src=dataUrl;i.style.display='block';
+    }
+
+    // Auto-fill title from filename
+    if(!document.getElementById('addTitle').value.trim()){
+      document.getElementById('addTitle').value=file.name.replace(/\.[^/.]+$/,'').replace(/[-_]/g,' ');
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveMemory(){
+  const title=document.getElementById('addTitle').value.trim();
+  if(!title){alert('Please enter a title for this memory.');return;}
+  const date=document.getElementById('addDate').value;
+  if(!date){alert('Please pick a date.');return;}
+
+  const type=document.getElementById('addType').value;
+  const emoji=document.getElementById('addEmoji').value.trim()||TYPE_ICON[type];
+
+  const mem={
+    id:nextId(),
+    title,
+    desc:document.getElementById('addDesc').value.trim(),
+    date,
+    time:document.getElementById('addTime').value,
+    type,
+    emoji,
+    fav:false,
+    media:pendingFile?pendingFile.dataUrl:null,
+  };
+  memories.unshift(mem);
+  saveMemories();
+  closeModal('addModal');
+  render();
+  // Reset
+  pendingFile=null;
+}
+
+// ── FLASHBACK ──
+function openFlashbackModal(){
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const defYear=now.getFullYear()-1;
+  document.getElementById('fbDate').value=`${defYear}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  document.getElementById('fbTime').value='';
+  document.getElementById('fbResults').innerHTML='';
+  openModal('flashbackModal');
+}
+
+function runFlashback(){
+  const date=document.getElementById('fbDate').value;
+  if(!date){alert('Please pick a date.');return;}
+  const time=document.getElementById('fbTime').value;
+  const[,fmo,fday]=date.split('-');
+
+  const results=memories.filter(m=>{
+    if(!m.date)return false;
+    const[,mmo,mday]=m.date.split('-');
+    if(mmo!==fmo||mday!==fday)return false;
+    if(time&&m.time){
+      const[fh,fm]=time.split(':').map(Number);
+      const[mh,mm]=m.time.split(':').map(Number);
+      return Math.abs((fh*60+fm)-(mh*60+mm))<=60;
+    }
+    return true;
+  });
+
+  const res=document.getElementById('fbResults');
+  if(!results.length){
+    res.innerHTML='<div style="text-align:center;padding:1.5rem;color:var(--text3);font-size:13px">No memories found for this date.</div>';
+    return;
+  }
+  res.innerHTML=`<div style="font-size:12px;color:var(--text3);margin:12px 0 8px">${results.length} memor${results.length===1?'y':'ies'} from this day</div>
+  <div class="fb-results-grid">
+    ${results.map(m=>`
+      <div class="fb-card" onclick="closeModal('flashbackModal');viewMemory(${m.id})">
+        <div class="fb-card-thumb">
+          ${m.media
+            ?(m.type==='video'
+              ?`<video src="${m.media}" style="width:100%;height:100%;object-fit:cover"></video>`
+              :`<img src="${m.media}" style="width:100%;height:100%;object-fit:cover" alt="${m.title}">`)
+            :m.emoji||TYPE_ICON[m.type]
+          }
+        </div>
+        <div class="fb-card-info">
+          <div class="fb-card-title">${m.title}</div>
+          <div class="fb-card-date">${fmtDate(m.date)}${m.time?' · '+m.time:''}</div>
+        </div>
+      </div>
+    `).join('')}
+  </div>`;
+}
+
+// ── MODAL UTILS ──
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+// Close on overlay click
+document.querySelectorAll('.overlay').forEach(o=>{
+  o.addEventListener('click',function(e){if(e.target===this)closeModal(this.id)});
+});
+
+// ── INIT ──
+loadMemories();render();
+</script>
+</body>
+</html>
